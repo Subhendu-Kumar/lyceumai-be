@@ -1,8 +1,49 @@
-# main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, status
+from contextlib import asynccontextmanager
+from utils.db_util import lifespan_manager
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
 
-@app.get("/")
-def read_root():
-    return {"message": "Lyceum AI Backend is running..."}
+# Lifespan event handler
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    async with lifespan_manager():
+        yield
+
+
+# Create FastAPI instance with lifespan
+app = FastAPI(
+    version="1.0.0",
+    lifespan=lifespan,
+    title="Lyceum App API",
+    description="A FastAPI application with Prisma & NeonDB",
+)
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True,
+)
+
+# Include routers
+
+
+# Root endpoint
+@app.get("/", status_code=status.HTTP_200_OK, tags=["Root"])
+async def root():
+    return {
+        "docs": "/docs",
+        "redoc": "/redoc",
+        "status": "running",
+        "message": "FastAPI With Prisma & NeonDB",
+    }
+
+
+# Health check endpoint
+@app.get("/health", status_code=status.HTTP_200_OK, tags=["Health"])
+async def health_check():
+    return {"status": "healthy", "message": "API is running successfully"}
