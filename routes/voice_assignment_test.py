@@ -2,7 +2,8 @@
 # import cloudinary.uploader
 
 from fastapi import APIRouter, HTTPException, status, UploadFile, File
-from elevenlabs.client import ElevenLabs
+
+# from elevenlabs.client import ElevenLabs
 from langchain.prompts import PromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.output_parsers import PydanticOutputParser
@@ -12,13 +13,21 @@ import os
 from dotenv import load_dotenv
 from io import BytesIO
 
+import assemblyai as aai
+
 load_dotenv()
 
 gemini = ChatGoogleGenerativeAI(model="gemini-2.5-pro")
 
-elevenlabs = ElevenLabs(
-    api_key=os.getenv("ELEVENLABS_API_KEY"),
-)
+# elevenlabs = ElevenLabs(
+#     api_key=os.getenv("ELEVENLABS_API_KEY"),
+# )
+
+aai.settings.api_key = os.getenv("ASSEMBLY_AI_API_KEY")
+
+aai_config = aai.TranscriptionConfig(speech_model=aai.SpeechModel.best)
+
+aai_transcriber = aai.Transcriber(config=aai_config)
 
 question = (
     "What is the difference between a process and a thread in an operating system?"
@@ -114,13 +123,23 @@ async def voice_assignment(audio_ans: UploadFile = File(...)):
         a_file = BytesIO(audio_bytes)
         a_file.name = "Recording.m4a"
 
-        transcription = elevenlabs.speech_to_text.convert(
-            file=a_file,
-            model_id="scribe_v1",  # Model to use, for now only "scribe_v1" is supported
-            tag_audio_events=True,  # Tag audio events like laughter, applause, etc.
-            language_code="eng",  # Language of the audio file. If set to None, the model will detect the language automatically.
-            diarize=True,  # Whether to annotate who is speaking
-        )
+        # transcription = elevenlabs.speech_to_text.convert(
+        #     file=a_file,
+        #     model_id="scribe_v1",  # Model to use, for now only "scribe_v1" is supported
+        #     tag_audio_events=True,  # Tag audio events like laughter, applause, etc.
+        #     language_code="eng",  # Language of the audio file. If set to None, the model will detect the language automatically.
+        #     diarize=True,  # Whether to annotate who is speaking
+        # )
+
+        transcript = aai_transcriber.transcribe(a_file)
+
+        if transcript.status == "error":
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Transcription failed: {transcript.error}",
+            )
+
+        print(transcript.text)
 
         chain = prompt | gemini | parser
 
@@ -128,7 +147,7 @@ async def voice_assignment(audio_ans: UploadFile = File(...)):
             {
                 "question": question,
                 "base_answer": base_answer,
-                "user_answer": transcription.text,
+                "user_answer": transcript.text,
             }
         )
 
