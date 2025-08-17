@@ -5,29 +5,19 @@ from fastapi import APIRouter, HTTPException, status, UploadFile, File
 
 # from elevenlabs.client import ElevenLabs
 from langchain.prompts import PromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 from typing import List
-import os
 from dotenv import load_dotenv
 from io import BytesIO
-
-import assemblyai as aai
+from utils.aai_util import aai_transcriber
+from utils.gemini_util import gemini
 
 load_dotenv()
-
-gemini = ChatGoogleGenerativeAI(model="gemini-2.5-pro")
 
 # elevenlabs = ElevenLabs(
 #     api_key=os.getenv("ELEVENLABS_API_KEY"),
 # )
-
-aai.settings.api_key = os.getenv("ASSEMBLY_AI_API_KEY")
-
-aai_config = aai.TranscriptionConfig(speech_model=aai.SpeechModel.best)
-
-aai_transcriber = aai.Transcriber(config=aai_config)
 
 question = (
     "What is the difference between a process and a thread in an operating system?"
