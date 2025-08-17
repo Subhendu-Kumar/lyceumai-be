@@ -1,4 +1,4 @@
-from routes import auth
+from routes import auth, voice_assignment_test
 from fastapi import FastAPI, status
 from contextlib import asynccontextmanager
 from utils.db_util import lifespan_manager
@@ -32,6 +32,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router)
+app.include_router(voice_assignment_test.router)
 
 
 # Root endpoint
