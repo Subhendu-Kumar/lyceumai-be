@@ -1,9 +1,10 @@
 from utils.db_util import get_db
+from utils.user_util import get_current_user
 from schemas.auth import SignupUser, LoginUser
 from utils.format_user_res import format_user_response
 from fastapi import APIRouter, HTTPException, Depends, status
 from utils.password_util import hash_password, verify_password
-from utils.jwt_util import create_access_token, verify_token_bool, verify_token
+from utils.jwt_util import create_access_token, verify_token_bool
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -77,18 +78,10 @@ async def verify_user(db=Depends(get_db), data=Depends(verify_token_bool)):
 
 
 @router.get("/user", status_code=status.HTTP_200_OK)
-async def get_user(db=Depends(get_db), user_data: dict = Depends(verify_token)):
+async def get_user(db=Depends(get_db), user=Depends(get_current_user)):
     try:
-        userId = user_data.get("user")["id"]
-        db_user = await db.user.find_unique(where={"id": userId})
-        if not db_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user id"
-            )
-        token = create_access_token(
-            data={"user": {"id": db_user.id, "email": db_user.email}}
-        )
-        return format_user_response(db_user, token=token)
+        token = create_access_token(data={"user": {"id": user.id, "email": user.email}})
+        return format_user_response(user, token=token)
     except HTTPException:
         raise
     except Exception as e:

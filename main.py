@@ -1,4 +1,4 @@
-from routes import auth, voice_assignment_test, mermaid_gen_test
+from routes import auth, voice_assignment_test, mermaid_gen_test, classroom_admin
 from fastapi import FastAPI, status
 from contextlib import asynccontextmanager
 from utils.db_util import lifespan_manager
@@ -34,6 +34,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(voice_assignment_test.router)
 app.include_router(mermaid_gen_test.router)
+app.include_router(classroom_admin.router)
 
 
 # Root endpoint
