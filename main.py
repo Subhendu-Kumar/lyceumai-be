@@ -1,8 +1,14 @@
-from routes import auth, voice_assignment_test, mermaid_gen_test, classroom_admin
 from fastapi import FastAPI, status
 from contextlib import asynccontextmanager
 from utils.db_util import lifespan_manager
 from fastapi.middleware.cors import CORSMiddleware
+from routes import (
+    auth,
+    voice_assignment_test,
+    mermaid_gen_test,
+    classroom_admin,
+    classroom_enrollment,
+)
 
 
 # Lifespan event handler
@@ -35,6 +41,7 @@ app.include_router(auth.router)
 app.include_router(voice_assignment_test.router)
 app.include_router(mermaid_gen_test.router)
 app.include_router(classroom_admin.router)
+app.include_router(classroom_enrollment.router)
 
 
 # Root endpoint

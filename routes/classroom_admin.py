@@ -1,7 +1,7 @@
 from utils.db_util import get_db
 from utils.user_util import get_current_teacher
-from utils.class_code_util import gen_class_code
 from schemas.classroom import CreateOrUpdateClassRoom
+from utils.class_code_util import gen_class_code_recommended
 from fastapi import APIRouter, HTTPException, Depends, status, Path
 
 router = APIRouter(prefix="/admin", tags=["Classroom Admin"])
@@ -14,13 +14,19 @@ async def create_classroom(
     teacher=Depends(get_current_teacher),
 ):
     try:
-        class_code = await gen_class_code()
+        code = await gen_class_code_recommended()
+        existing_class = await db.classroom.find_first(where={"code": code})
+        if existing_class:
+            return HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Classroom with this code already exists",
+            )
         db_classroom = await db.classroom.create(
             data={
                 "name": class_room.name,
                 "description": class_room.description,
                 "teacherId": teacher.id,
-                "code": class_code,
+                "code": code,
             }
         )
         if not db_classroom:
