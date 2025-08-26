@@ -1,17 +1,15 @@
 # from uuid import uuid4
 # import cloudinary.uploader
-
-from fastapi import APIRouter, HTTPException, status, UploadFile, File
-
 # from elevenlabs.client import ElevenLabs
+
+from io import BytesIO
+from dotenv import load_dotenv
+from utils.gemini_util import gemini
+from utils.aai_util import aai_transcriber
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
-from pydantic import BaseModel, Field
-from typing import List
-from dotenv import load_dotenv
-from io import BytesIO
-from utils.aai_util import aai_transcriber
-from utils.gemini_util import gemini
+from schemas.voice_assignment import VoiceAssignmentOutputFormat
+from fastapi import APIRouter, HTTPException, status, UploadFile, File
 
 load_dotenv()
 
@@ -30,22 +28,7 @@ A thread is a lightweight unit of execution within a process that shares the sam
 Threads are faster to create and switch between compared to processes because they avoid the overhead of separate memory allocation."""
 
 
-class OutputFormat(BaseModel):
-    score: int = Field(
-        description="Score from 0-100 based on accuracy, completeness, and understanding demonstrated"
-    )
-    feedback: str = Field(
-        description="Comprehensive feedback including strengths, weaknesses, and specific improvement suggestions"
-    )
-    strengths: List[str] = Field(
-        description="List of positive aspects in the user's response"
-    )
-    areas_for_improvement: List[str] = Field(
-        description="Specific areas where the response could be enhanced"
-    )
-
-
-parser = PydanticOutputParser(pydantic_object=OutputFormat)
+parser = PydanticOutputParser(pydantic_object=VoiceAssignmentOutputFormat)
 
 prompt = PromptTemplate(
     template="""

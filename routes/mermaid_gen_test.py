@@ -1,25 +1,10 @@
-from fastapi import APIRouter, HTTPException, status
-from langchain.prompts import PromptTemplate
-from pydantic import BaseModel, Field
-from typing import Optional
-from langchain_core.output_parsers import PydanticOutputParser
 from utils.gemini_util import gemini
-
-
-router = APIRouter(prefix="/mermaid", tags=["Mermaid Generation"])
-
-
-class MermaidCodeResponse(BaseModel):
-    mermaid_code: Optional[str] = Field(
-        None, description="Generated Mermaid diagram code"
-    )
-    description: str = Field(
-        description="Description of the generated diagram, if applicable & if the user query is not clear ask for clarification"
-    )
-
+from langchain.prompts import PromptTemplate
+from fastapi import APIRouter, HTTPException, status
+from langchain_core.output_parsers import PydanticOutputParser
+from schemas.mermaid import MermaidCodeResponse, MermaidRequest
 
 parser = PydanticOutputParser(pydantic_object=MermaidCodeResponse)
-
 
 prompt = PromptTemplate(
     input_variables=["user_query"],
@@ -123,23 +108,25 @@ prompt = PromptTemplate(
     - Any specific styling preferences
     - The level of detail required
 
+    **important**
+    - don't include any type of html tags
+    - don't include any type of markdown formatting
+
     {format_instruction}
     """,
 )
 
-
-class MermaidRequest(BaseModel):
-    user_query: str
+router = APIRouter(prefix="/mermaid", tags=["Mermaid Generation"])
 
 
 @router.post("/generate", status_code=status.HTTP_200_OK)
-async def gen_mermaid(request_body: MermaidRequest):
+async def gen_mermaid(data: MermaidRequest):
     try:
         chain = prompt | gemini | parser
 
         result = chain.invoke(
             {
-                "user_query": request_body.user_query,
+                "user_query": data.query,
             }
         )
 

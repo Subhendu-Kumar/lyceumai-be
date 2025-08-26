@@ -4,10 +4,11 @@ from utils.db_util import lifespan_manager
 from fastapi.middleware.cors import CORSMiddleware
 from routes import (
     auth,
-    voice_assignment_test,
-    mermaid_gen_test,
     classroom_admin,
+    mermaid_gen_test,
+    classroom_materials,
     classroom_enrollment,
+    voice_assignment_test,
 )
 
 
@@ -37,11 +38,18 @@ app.add_middleware(
 )
 
 # Include routers
+
+# Auth routes
 app.include_router(auth.router)
+
+# Test routes
 app.include_router(voice_assignment_test.router)
 app.include_router(mermaid_gen_test.router)
+
+# classroom routes
 app.include_router(classroom_admin.router)
 app.include_router(classroom_enrollment.router)
+app.include_router(classroom_materials.router)
 
 
 # Root endpoint
