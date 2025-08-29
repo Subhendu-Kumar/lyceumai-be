@@ -9,6 +9,8 @@ from routes import (
     classroom_materials,
     classroom_enrollment,
     voice_assignment_test,
+    classroom_announcement,
+    classroom_comment,
 )
 
 
@@ -50,6 +52,8 @@ app.include_router(mermaid_gen_test.router)
 app.include_router(classroom_admin.router)
 app.include_router(classroom_enrollment.router)
 app.include_router(classroom_materials.router)
+app.include_router(classroom_announcement.router)
+app.include_router(classroom_comment.router)
 
 
 # Root endpoint

@@ -14,3 +14,14 @@ class AddStudentToClass(BaseModel):
 class RemoveStudentFromClass(BaseModel):
     student_id: str
     class_id: str
+
+
+class ClassAnnouncementCreate(BaseModel):
+    title: str
+    message: str
+    class_id: str
+
+
+class ClassAnnouncementUpdate(BaseModel):
+    title: str
+    message: str
