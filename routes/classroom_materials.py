@@ -1,8 +1,15 @@
 import cloudinary.uploader
 from utils.db_util import get_db
 from utils.cloudinary_util import *
+import os
+import tempfile
+from io import BytesIO
+from dotenv import load_dotenv
+from langchain_chroma import Chroma
 from prisma.errors import RecordNotFoundError
 from utils.user_util import get_current_teacher
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from fastapi import (
     Form,
     Path,
@@ -14,7 +21,19 @@ from fastapi import (
     HTTPException,
 )
 
+load_dotenv()
+
 router = APIRouter(prefix="/class", tags=["Classroom Materials"])
+
+embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
+
+vector_store = Chroma(
+    collection_name="class-materials",
+    embedding_function=embeddings,
+    chroma_cloud_api_key=os.getenv("CHROMA_API_KEY"),
+    tenant=os.getenv("CHROMA_TENANT"),
+    database=os.getenv("CHROMA_DATABASE"),
+)
 
 
 @router.post("/material", status_code=status.HTTP_201_CREATED)
@@ -31,8 +50,9 @@ async def create_material(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Classroom not found"
             )
+        file_bytes = await file.read()
         file_res = cloudinary.uploader.upload(
-            file.file,
+            BytesIO(file_bytes),
             resource_type="auto",
             folder=f"materials/{classroomId}",
             access_mode="public",
@@ -42,7 +62,6 @@ async def create_material(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="file upload failed",
             )
-        print("file_res:   ", file_res)
         file_url = file_res.get("secure_url")
         material = await db.material.create(
             data={
@@ -56,11 +75,25 @@ async def create_material(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Material creation failed",
             )
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(file_bytes)
+            tmp_path = tmp.name
+        loader = PyPDFLoader(tmp_path)
+        docs = loader.load()
+        for doc in docs:
+            doc.metadata["material_id"] = material.id
+            doc.metadata["class_id"] = existing_class.id
+        vector_store.add_documents(docs)
+
         return {"material": material}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
 @router.get("/materials/{classroom_id}", status_code=status.HTTP_200_OK)
@@ -109,3 +142,26 @@ async def delete_material(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
+
+
+# @router.get("/from-chroma", status_code=status.HTTP_200_OK)
+# async def get_from_chroma():
+#     try:
+#         docs = vector_store.similarity_search(
+#             query="types of os",  # empty query to fetch all docs matching filter
+#             k=2,
+#             filter={
+#                 "$and": [
+#                     {"class_id": "4b838eb5-d8aa-4d9e-9f8b-165fcc499b72"},
+#                     {"material_id": "fbfc8e8a-8834-44c4-a88a-b1674bc49ba0"},
+#                 ]
+#             },
+#         )
+
+#         return [
+#             {"page_content": doc.page_content, "metadata": doc.metadata} for doc in docs
+#         ]
+#     except Exception as e:
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+#         )
