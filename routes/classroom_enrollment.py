@@ -114,3 +114,23 @@ async def remove_student_from_class(
         return {"detail": "Student removed from class successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/peoples/{classId}", status_code=status.HTTP_200_OK)
+async def get_class_peoples(
+    classId: str = Path(..., description="ID of the classroom"),
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    try:
+        class_room = await db.classroom.find_unique(where={"id": classId})
+        if not class_room:
+            raise HTTPException(status_code=404, detail="Classroom not found")
+        students = await db.enrollment.find_many(
+            where={"classroomId": class_room.id},
+            include={"student": True},
+            order={"joinedAt": "desc"},
+        )
+        return {"students": students}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
