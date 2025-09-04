@@ -32,6 +32,9 @@ model User {
   assignments    Assignment[]       @relation("TeacherAssignments")
   submissions    Submission[]
   comments       Comment[]
+  quizzes        Quiz[]          @relation("QuizCreator")
+  quizAttempts   QuizAttempt[]   @relation("UserAttempts")
+
 }
 
 model Classroom {
@@ -39,6 +42,7 @@ model Classroom {
   name        String
   code        String        @unique // join code
   description String?
+  syllabusUrl String
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -49,6 +53,7 @@ model Classroom {
   assignments Assignment[]
   materials   Material[]
   announcements Announcement[]
+  quizzes       Quiz[]
 }
 
 model Enrollment {
@@ -120,6 +125,62 @@ model Comment {
 
   assignment   Assignment? @relation(fields: [assignmentId], references: [id])
   assignmentId String?
+}
+
+model Quiz {
+  id          String        @id @default(uuid())
+  title       String
+  description String?
+  published   Boolean       @default(false)  // true = visible in class, false = private
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  creator     User          @relation("QuizCreator", fields: [creatorId], references: [id])
+  creatorId   String
+  classroom   Classroom?    @relation(fields: [classroomId], references: [id])
+  classroomId String?
+  questions   Question[]
+  attempts    QuizAttempt[]
+}
+
+model Question {
+  id        String       @id @default(uuid())
+  text      String
+  options   String[]
+  answer    Int
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  quiz      Quiz         @relation(fields: [quizId], references: [id])
+  quizId    String
+  responses Response[]
+}
+
+model QuizAttempt {
+  id          String     @id @default(uuid())
+  score       Int        @default(0)
+  completed   Boolean    @default(false)
+  attemptedAt DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  quiz        Quiz       @relation(fields: [quizId], references: [id])
+  quizId      String
+  user        User       @relation("UserAttempts", fields: [userId], references: [id])
+  userId      String
+  responses   Response[]
+}
+
+model Response {
+  id             String      @id @default(uuid())
+  selectedOption Int?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  attempt        QuizAttempt @relation(fields: [attemptId], references: [id])
+  attemptId      String
+  question       Question    @relation(fields: [questionId], references: [id])
+  questionId     String
 }
 
 // ---------- ENUMS ----------

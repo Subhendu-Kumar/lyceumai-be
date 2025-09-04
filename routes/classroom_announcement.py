@@ -72,6 +72,7 @@ async def update_announcement(
                 "message": announcement.message,
             },
         )
+        # TODO notification to user
         return {"announcement": updated_announcement}
     except Exception as e:
         raise HTTPException(
@@ -96,6 +97,7 @@ async def delete_announcement(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Announcement not found"
             )
         await db.announcement.delete(where={"id": announcement_id})
+        # TODO notification to user
         return {"detail": "Announcement deleted successfully"}
     except Exception as e:
         raise HTTPException(

@@ -9,7 +9,7 @@ from langchain_chroma import Chroma
 from prisma.errors import RecordNotFoundError
 from utils.user_util import get_current_teacher
 from langchain_community.document_loaders import PyPDFLoader
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from utils.gemini_util import embeddings
 from fastapi import (
     Form,
     Path,
@@ -24,8 +24,6 @@ from fastapi import (
 load_dotenv()
 
 router = APIRouter(prefix="/class", tags=["Classroom Materials"])
-
-embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 
 vector_store = Chroma(
     collection_name="class-materials",
