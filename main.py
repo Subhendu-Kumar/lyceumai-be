@@ -11,6 +11,7 @@ from routes import (
     voice_assignment_test,
     classroom_announcement,
     classroom_comment,
+    classroom_quiz,
 )
 
 
@@ -54,6 +55,7 @@ app.include_router(classroom_enrollment.router)
 app.include_router(classroom_materials.router)
 app.include_router(classroom_announcement.router)
 app.include_router(classroom_comment.router)
+app.include_router(classroom_quiz.router)
 
 
 # Root endpoint

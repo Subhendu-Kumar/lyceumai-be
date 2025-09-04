@@ -146,7 +146,7 @@ model Quiz {
 
 model Question {
   id        String       @id @default(uuid())
-  text      String
+  question      String
   options   String[]
   answer    Int
   createdAt DateTime     @default(now())
