@@ -5,11 +5,10 @@ import os
 import tempfile
 from io import BytesIO
 from dotenv import load_dotenv
-from langchain_chroma import Chroma
+from utils.chroma_util import class_material_vector_store
 from prisma.errors import RecordNotFoundError
 from utils.user_util import get_current_teacher
 from langchain_community.document_loaders import PyPDFLoader
-from utils.gemini_util import embeddings
 from fastapi import (
     Form,
     Path,
@@ -24,14 +23,6 @@ from fastapi import (
 load_dotenv()
 
 router = APIRouter(prefix="/class", tags=["Classroom Materials"])
-
-vector_store = Chroma(
-    collection_name="class-materials",
-    embedding_function=embeddings,
-    chroma_cloud_api_key=os.getenv("CHROMA_API_KEY"),
-    tenant=os.getenv("CHROMA_TENANT"),
-    database=os.getenv("CHROMA_DATABASE"),
-)
 
 
 @router.post("/material", status_code=status.HTTP_201_CREATED)
@@ -82,7 +73,7 @@ async def create_material(
         for doc in docs:
             doc.metadata["material_id"] = material.id
             doc.metadata["class_id"] = existing_class.id
-        vector_store.add_documents(docs)
+        class_material_vector_store.add_documents(docs)
 
         return {"material": material}
     except Exception as e:

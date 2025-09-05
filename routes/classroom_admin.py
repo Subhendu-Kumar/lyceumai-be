@@ -1,7 +1,6 @@
 import os
 from dotenv import load_dotenv
-from langchain_chroma import Chroma
-from utils.gemini_util import embeddings
+from utils.chroma_util import syllabus_vector_store
 from utils.db_util import get_db
 from utils.user_util import get_current_teacher
 from schemas.classroom import CreateOrUpdateClassRoom
@@ -25,14 +24,6 @@ from langchain_community.document_loaders import PyPDFLoader
 load_dotenv()
 
 router = APIRouter(prefix="/admin", tags=["Classroom Admin"])
-
-vector_store = Chroma(
-    collection_name="class-syllabus",
-    embedding_function=embeddings,
-    chroma_cloud_api_key=os.getenv("CHROMA_API_KEY"),
-    tenant=os.getenv("CHROMA_TENANT"),
-    database=os.getenv("CHROMA_DATABASE"),
-)
 
 
 @router.post("/classroom", status_code=status.HTTP_201_CREATED)
@@ -85,7 +76,7 @@ async def create_classroom(
         docs = loader.load()
         for doc in docs:
             doc.metadata["class_id"] = db_classroom.id
-        vector_store.add_documents(docs)
+        syllabus_vector_store.add_documents(docs)
         return {
             "message": "Classroom created successfully",
             "classroom": db_classroom,
