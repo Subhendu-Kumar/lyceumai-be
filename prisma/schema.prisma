@@ -67,32 +67,92 @@ model Enrollment {
   @@unique([studentId, classroomId])
 }
 
+// model Assignment {
+//   id           String     @id @default(uuid())
+//   title        String
+//   description  String?
+//   dueDate      DateTime?
+//   createdAt    DateTime   @default(now())
+// 
+//   teacher      User       @relation("TeacherAssignments", fields: [teacherId], references: [id])
+//   teacherId    String
+//   classroom    Classroom  @relation(fields: [classroomId], references: [id])
+//   classroomId  String
+//   submissions  Submission[]
+//   comments     Comment[]
+// }
+
+// model Submission {
+//   id           String     @id @default(uuid())
+//   content      String?
+//   fileUrl      String?
+//   submittedAt  DateTime   @default(now())
+//   grade        Float?
+//  
+//   student      User       @relation(fields: [studentId], references: [id])
+//   studentId    String
+//   assignment   Assignment @relation(fields: [assignmentId], references: [id])
+//   assignmentId String
+// }
+
 model Assignment {
-  id           String     @id @default(uuid())
+  id           String       @id @default(uuid())
   title        String
   description  String?
   dueDate      DateTime?
-  createdAt    DateTime   @default(now())
+  createdAt    DateTime     @default(now())
+  type         AssignmentType
 
-  teacher      User       @relation("TeacherAssignments", fields: [teacherId], references: [id])
+  teacher      User         @relation("TeacherAssignments", fields: [teacherId], references: [id])
   teacherId    String
-  classroom    Classroom  @relation(fields: [classroomId], references: [id])
+  classroom    Classroom    @relation(fields: [classroomId], references: [id])
   classroomId  String
+
   submissions  Submission[]
   comments     Comment[]
 }
 
 model Submission {
-  id           String     @id @default(uuid())
-  content      String?
-  fileUrl      String?
-  submittedAt  DateTime   @default(now())
-  grade        Float?
+  id           String       @id @default(uuid())
+  submittedAt  DateTime     @default(now())
 
-  student      User       @relation(fields: [studentId], references: [id])
+  student      User         @relation(fields: [studentId], references: [id])
   studentId    String
-  assignment   Assignment @relation(fields: [assignmentId], references: [id])
+  assignment   Assignment   @relation(fields: [assignmentId], references: [id])
   assignmentId String
+
+  // Relations for specialization
+  textSubmission   TextSubmission?
+  voiceSubmission  VoiceSubmission?
+}
+
+model TextSubmission {
+  id           String     @id @default(uuid())
+  content      String
+
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  submissionId String     @unique
+}
+
+model VoiceSubmission {
+  id           String     @id @default(uuid())
+  fileUrl      String
+
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  submissionId String     @unique
+
+  feedback     VoiceFeedback?
+}
+
+model VoiceFeedback {
+  id           String     @id @default(uuid())
+  score        Int
+  feedback     String
+  strengths    String[]   // array of strengths
+  improvements String[]   // array of areas for improvement
+
+  voiceSubmission VoiceSubmission @relation(fields: [voiceSubmissionId], references: [id])
+  voiceSubmissionId String @unique
 }
 
 model Material {
@@ -188,4 +248,9 @@ model Response {
 enum Role {
   STUDENT
   TEACHER
+}
+
+enum AssignmentType {
+  TEXT
+  VOICE
 }
