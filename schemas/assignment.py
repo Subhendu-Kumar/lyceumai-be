@@ -12,3 +12,7 @@ class AssignmentBase(BaseModel):
     dueDate: str
     description: str
     type: AssignmentTypeEnum
+
+
+class TextAssignmentSubmission(BaseModel):
+    content: str
