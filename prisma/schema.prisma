@@ -98,7 +98,8 @@ model Enrollment {
 model Assignment {
   id           String       @id @default(uuid())
   title        String
-  description  String?
+  question     String
+  referenceAns String
   dueDate      DateTime?
   createdAt    DateTime     @default(now())
   type         AssignmentType
@@ -141,6 +142,7 @@ model TextSubmission {
 model VoiceSubmission {
   id           String     @id @default(uuid())
   fileUrl      String
+  transcript   String?
   score        Int?
   feedback     String?
   strengths    String[]   @default([])   // array of strengths

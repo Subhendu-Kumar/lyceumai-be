@@ -25,8 +25,9 @@ async def create_assignment(
                 "dueDate": data.dueDate,
                 "type": data.type.value,
                 "teacherId": teacher.id,
+                "question": data.question,
                 "classroomId": classroom_id,
-                "description": data.description,
+                "referenceAns": data.referenceAns,
             },
         )
         return {"assignment": assignment, "detail": "Assignment created successfully"}
