@@ -91,3 +91,33 @@ async def delete_assignment(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
+
+
+@router.get("/{assignment_id}/submissions", status_code=status.HTTP_200_OK)
+async def get_assignment_submissions(
+    assignment_id: str = Path(..., description="ID of the assignment"),
+    teacher=Depends(get_current_teacher),
+    db=Depends(get_db),
+):
+    try:
+        assignment = await db.assignment.find_unique(
+            where={"id": assignment_id, "teacherId": teacher.id},
+            include={
+                "submissions": {
+                    "include": {
+                        "student": True,
+                        "textSubmission": True,
+                        "voiceSubmission": True,
+                    }
+                }
+            },
+        )
+        if not assignment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found"
+            )
+        return {"assignment": assignment}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )

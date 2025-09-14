@@ -13,6 +13,44 @@ from fastapi import APIRouter, HTTPException, Depends, status, Path, UploadFile,
 router = APIRouter(prefix="/assignment", tags=["Class Assignment Student"])
 
 
+@router.get("/{classId}/list", status_code=status.HTTP_200_OK)
+async def list_assignments(
+    classId: str = Path(..., description="ID of the class"),
+    student=Depends(get_current_student),
+    db=Depends(get_db),
+):
+    try:
+        assignments = await db.assignment.find_many(
+            where={"classroomId": classId},
+            include={
+                "submissions": {
+                    "where": {"studentId": student.id},
+                }
+            },
+            order={"createdAt": "desc"},
+        )
+
+        result = []
+        for a in assignments:
+            result.append(
+                {
+                    "id": a.id,
+                    "type": a.type,
+                    "title": a.title,
+                    "dueDate": a.dueDate,
+                    "question": a.question,
+                    "createdAt": a.createdAt,
+                    "isSubmitted": len(a.submissions) > 0,
+                }
+            )
+
+        return {"assignments": result}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
 @router.post("/{assignmentId}/submit/text", status_code=status.HTTP_201_CREATED)
 async def submit_text_assignment(
     data: TextAssignmentSubmission,
