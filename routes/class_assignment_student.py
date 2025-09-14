@@ -51,6 +51,29 @@ async def list_assignments(
         )
 
 
+@router.get("/s/{assignmentId}", status_code=status.HTTP_200_OK)
+async def get_assignment(
+    assignmentId: str = Path(..., description="ID of the assignment"),
+    student=Depends(get_current_student),
+    db=Depends(get_db),
+):
+    try:
+        assignment_db = await db.assignment.find_unique(where={"id": assignmentId})
+        assignment = {
+            "id": assignment_db.id,
+            "type": assignment_db.type,
+            "title": assignment_db.title,
+            "dueDate": assignment_db.dueDate,
+            "question": assignment_db.question,
+            "classroomId": assignment_db.classroomId,
+        }
+        return {"assignment": assignment}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
 @router.post("/{assignmentId}/submit/text", status_code=status.HTTP_201_CREATED)
 async def submit_text_assignment(
     data: TextAssignmentSubmission,
