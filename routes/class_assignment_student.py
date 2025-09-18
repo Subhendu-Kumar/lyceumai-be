@@ -6,8 +6,12 @@ from utils.cloudinary_util import *
 from utils.aai_util import aai_transcriber
 from utils.user_util import get_current_student
 from scripts.assignment_eval import evaluate_assignment
-from schemas.assignment import TextAssignmentSubmission, AssignmentEvalOutput
 from fastapi import APIRouter, HTTPException, Depends, status, Path, UploadFile, File
+from schemas.assignment import (
+    AssignmentTypeEnum,
+    AssignmentEvalOutput,
+    TextAssignmentSubmission,
+)
 
 
 router = APIRouter(prefix="/assignment", tags=["Class Assignment Student"])
@@ -68,6 +72,80 @@ async def get_assignment(
             "classroomId": assignment_db.classroomId,
         }
         return {"assignment": assignment}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@router.get("/s/{assignmentId}/submission", status_code=status.HTTP_200_OK)
+async def get_student_submission(
+    assignmentId: str = Path(..., description="ID of the assignment"),
+    student=Depends(get_current_student),
+    db=Depends(get_db),
+):
+    try:
+        assignment_db = await db.assignment.find_unique(where={"id": assignmentId})
+        if not assignment_db:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Assignment not found"
+            )
+        submission_db = await db.submission.find_first(
+            where={"assignmentId": assignmentId, "studentId": student.id},
+        )
+        if not submission_db:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
+            )
+
+        textSubmission = None
+        voiceSubmission = None
+
+        if assignment_db.type == AssignmentTypeEnum.TEXT:
+            text_submission = await db.textsubmission.find_first(
+                where={"submissionId": submission_db.id},
+            )
+            textSubmission = {
+                "id": text_submission.id,
+                "score": text_submission.score,
+                "content": text_submission.content,
+                "feedback": text_submission.feedback,
+                "strengths": text_submission.strengths,
+                "improvements": text_submission.improvements,
+            }
+        else:
+            voice_submission = await db.voicesubmission.find_first(
+                where={"submissionId": submission_db.id},
+            )
+            voiceSubmission = {
+                "id": voice_submission.id,
+                "score": voice_submission.score,
+                "fileUrl": voice_submission.fileUrl,
+                "feedback": voice_submission.feedback,
+                "strengths": voice_submission.strengths,
+                "transcript": voice_submission.transcript,
+                "improvements": voice_submission.improvements,
+            }
+
+        assignment = {
+            "id": assignment_db.id,
+            "type": assignment_db.type,
+            "title": assignment_db.title,
+            "dueDate": assignment_db.dueDate,
+            "question": assignment_db.question,
+            "classroomId": assignment_db.classroomId,
+        }
+        submission_data = {
+            "id": submission_db.id,
+            "textSubmission": textSubmission,
+            "voiceSubmission": voiceSubmission,
+            "submittedAt": submission_db.submittedAt,
+        }
+
+        return {
+            "assignment": assignment,
+            "submission": submission_data,
+        }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)

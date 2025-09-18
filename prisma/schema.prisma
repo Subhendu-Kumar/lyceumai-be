@@ -67,34 +67,6 @@ model Enrollment {
   @@unique([studentId, classroomId])
 }
 
-// model Assignment {
-//   id           String     @id @default(uuid())
-//   title        String
-//   description  String?
-//   dueDate      DateTime?
-//   createdAt    DateTime   @default(now())
-// 
-//   teacher      User       @relation("TeacherAssignments", fields: [teacherId], references: [id])
-//   teacherId    String
-//   classroom    Classroom  @relation(fields: [classroomId], references: [id])
-//   classroomId  String
-//   submissions  Submission[]
-//   comments     Comment[]
-// }
-
-// model Submission {
-//   id           String     @id @default(uuid())
-//   content      String?
-//   fileUrl      String?
-//   submittedAt  DateTime   @default(now())
-//   grade        Float?
-//  
-//   student      User       @relation(fields: [studentId], references: [id])
-//   studentId    String
-//   assignment   Assignment @relation(fields: [assignmentId], references: [id])
-//   assignmentId String
-// }
-
 model Assignment {
   id           String       @id @default(uuid())
   title        String
