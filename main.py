@@ -17,6 +17,8 @@ from routes import (
     class_assignment_student,
 )
 
+from chatbots.class_materials_bot import chat_router
+
 
 # Lifespan event handler
 @asynccontextmanager
@@ -64,6 +66,8 @@ app.include_router(classroom_assignment_admin.router)
 # student routes
 app.include_router(class_student.router)
 app.include_router(class_assignment_student.router)
+
+app.include_router(chat_router)
 
 
 # Root endpoint
