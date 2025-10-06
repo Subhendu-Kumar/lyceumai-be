@@ -1,13 +1,14 @@
+import asyncio
+from typing import List
 from dotenv import load_dotenv
 from utils.db_util import get_db
 from utils.gemini_util import gemini
-from utils.user_util import get_current_user
 from langchain.prompts import PromptTemplate
-from schemas.classroom import ClassQuizBody, QuizResponse
 from langchain.output_parsers import PydanticOutputParser
+from utils.user_util import get_current_user, get_current_student
 from fastapi import APIRouter, HTTPException, Depends, status, Path
+from schemas.classroom import ClassQuizBody, QuizResponse, QuizResponseSub
 from utils.chroma_util import syllabus_vector_store, class_material_vector_store
-import asyncio
 
 load_dotenv()
 
@@ -157,6 +158,121 @@ async def publish_quiz(
 async def update_quiz_question():
     try:
         pass
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@router.post("/attempt/{quiz_id}", status_code=status.HTTP_201_CREATED)
+async def attempt_quiz(
+    quiz_id: str = Path(..., description="Id of the quiz"),
+    student=Depends(get_current_student),
+    db=Depends(get_db),
+):
+    try:
+        existing_quiz = await db.quiz.find_unique(where={"id": quiz_id})
+        if not existing_quiz:
+            return HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"quiz with this {quiz_id} is not exists",
+            )
+        attempt = await db.quizattempt.create(
+            data={
+                "quizId": quiz_id,
+                "userId": student.id,
+            }
+        )
+        return {"detail": "quiz attempt created successfully", "attempt": attempt}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@router.get("/attempt/{quiz_id}", status_code=status.HTTP_200_OK)
+async def attempt_quiz(
+    quiz_id: str = Path(..., description="Id of the quiz"),
+    student=Depends(get_current_student),
+    db=Depends(get_db),
+):
+    try:
+        attempts = await db.quizattempt.find_many(
+            where={
+                "AND": [
+                    {"quizId": quiz_id},
+                    {"userId": student.id},
+                ]
+            }
+        )
+        return {"attempts": attempts}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@router.post("/submit/{attempt_id}", status_code=status.HTTP_200_OK)
+async def submit_quiz_response(
+    submission_data: List[QuizResponseSub],
+    attempt_id: str = Path(..., description="Id of the attempt"),
+    student=Depends(get_current_student),
+    db=Depends(get_db),
+):
+    try:
+        if not submission_data or len(submission_data) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or empty answers array",
+            )
+
+        attempt = await db.quizattempt.find_unique(
+            where={"id": attempt_id},
+            include={"quiz": {"include": {"questions": True}}},
+        )
+        if not attempt:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Quiz attempt not found"
+            )
+
+        if attempt.completed:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Already submitted response",
+            )
+
+        question_map = {q.id: q.answer for q in attempt.quiz.questions}
+
+        score = 0
+        responses_to_create = []
+        for resp in submission_data:
+            correct_option = question_map.get(resp.questionId)
+            if correct_option == resp.selectedOption:
+                score += 1
+
+            responses_to_create.append(
+                {
+                    "attemptId": attempt_id,
+                    "questionId": resp.questionId,
+                    "selectedOption": resp.selectedOption,
+                }
+            )
+
+        if responses_to_create:
+            await db.response.create_many(data=responses_to_create)
+
+        await db.quizattempt.update(
+            where={"id": attempt_id},
+            data={
+                "score": score,
+                "completed": True,
+            },
+        )
+
+        return {
+            "message": "Responses submitted successfully",
+            "score": score,
+        }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)

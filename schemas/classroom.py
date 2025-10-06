@@ -47,3 +47,8 @@ class QuizResponse(BaseModel):
     title: str = Field(..., description="The title of the quiz")
     description: str = Field(..., description="The description of the quiz")
     questions: List[Question] = Field(..., description="List of quiz questions")
+
+
+class QuizResponseSub(BaseModel):
+    questionId: str
+    selectedOption: int
