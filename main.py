@@ -15,6 +15,7 @@ from routes import (
     class_student,
     classroom_assignment_admin,
     class_assignment_student,
+    classroom_meetings,
 )
 
 from chatbots.class_materials_bot import chat_router
@@ -66,6 +67,8 @@ app.include_router(classroom_assignment_admin.router)
 # student routes
 app.include_router(class_student.router)
 app.include_router(class_assignment_student.router)
+
+app.include_router(classroom_meetings.router)
 
 app.include_router(chat_router)
 

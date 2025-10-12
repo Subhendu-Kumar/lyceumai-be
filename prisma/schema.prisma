@@ -5,7 +5,7 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-py"
+  provider             = "prisma-client-py"
   interface            = "asyncio"
   recursive_type_depth = 5
 }
@@ -18,151 +18,161 @@ datasource db {
 // ---------- MODELS ----------
 
 model User {
-  id        String       @id @default(uuid())
+  id        String   @id @default(uuid())
   name      String
-  email     String       @unique
+  email     String   @unique
   password  String
-  role      Role         @default(STUDENT)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  role      Role     @default(STUDENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  classrooms     Classroom[]        @relation("TeacherClassrooms")
-  enrollments    Enrollment[]
-  assignments    Assignment[]       @relation("TeacherAssignments")
-  submissions    Submission[]
-  comments       Comment[]
-  quizzes        Quiz[]          @relation("QuizCreator")
-  quizAttempts   QuizAttempt[]   @relation("UserAttempts")
-
+  classrooms   Classroom[]   @relation("TeacherClassrooms")
+  enrollments  Enrollment[]
+  assignments  Assignment[]  @relation("TeacherAssignments")
+  submissions  Submission[]
+  comments     Comment[]
+  quizzes      Quiz[]        @relation("QuizCreator")
+  quizAttempts QuizAttempt[] @relation("UserAttempts")
 }
 
 model Classroom {
-  id          String        @id @default(uuid())
+  id          String   @id @default(uuid())
   name        String
-  code        String        @unique // join code
+  code        String   @unique // join code
   description String?
   syllabusUrl String
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  teacher     User          @relation("TeacherClassrooms", fields: [teacherId], references: [id])
-  teacherId   String
-  enrollments Enrollment[]
-  assignments Assignment[]
-  materials   Material[]
+  teacher       User            @relation("TeacherClassrooms", fields: [teacherId], references: [id])
+  teacherId     String
+  enrollments   Enrollment[]
+  assignments   Assignment[]
+  materials     Material[]
   announcements Announcement[]
   quizzes       Quiz[]
+  classMeetings ClassMeetings[]
+}
+
+model ClassMeetings {
+  id          String        @id @default(uuid())
+  meetId      String        @unique
+  meetStatus  MeetingStatus @default(SCHEDULED)
+  classroom   Classroom     @relation(fields: [classroomId], references: [id])
+  classroomId String
+  MeetingTime DateTime
+  CreatedAt   DateTime      @default(now())
 }
 
 model Enrollment {
-  id           String     @id @default(uuid())
-  student      User       @relation(fields: [studentId], references: [id])
-  studentId    String
-  classroom    Classroom  @relation(fields: [classroomId], references: [id])
-  classroomId  String
-  joinedAt     DateTime   @default(now())
+  id          String    @id @default(uuid())
+  student     User      @relation(fields: [studentId], references: [id])
+  studentId   String
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+  classroomId String
+  joinedAt    DateTime  @default(now())
 
   @@unique([studentId, classroomId])
 }
 
 model Assignment {
-  id           String       @id @default(uuid())
+  id           String         @id @default(uuid())
   title        String
   question     String
   referenceAns String
   dueDate      DateTime?
-  createdAt    DateTime     @default(now())
+  createdAt    DateTime       @default(now())
   type         AssignmentType
 
-  teacher      User         @relation("TeacherAssignments", fields: [teacherId], references: [id])
-  teacherId    String
-  classroom    Classroom    @relation(fields: [classroomId], references: [id])
-  classroomId  String
+  teacher     User      @relation("TeacherAssignments", fields: [teacherId], references: [id])
+  teacherId   String
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+  classroomId String
 
-  submissions  Submission[]
-  comments     Comment[]
+  submissions Submission[]
+  comments    Comment[]
 }
 
 model Submission {
-  id           String       @id @default(uuid())
-  submittedAt  DateTime     @default(now())
+  id          String   @id @default(uuid())
+  submittedAt DateTime @default(now())
 
-  student      User         @relation(fields: [studentId], references: [id])
+  student      User       @relation(fields: [studentId], references: [id])
   studentId    String
-  assignment   Assignment   @relation(fields: [assignmentId], references: [id])
+  assignment   Assignment @relation(fields: [assignmentId], references: [id])
   assignmentId String
 
   // Relations for specialization
-  textSubmission   TextSubmission?
-  voiceSubmission  VoiceSubmission?
+  textSubmission  TextSubmission?
+  voiceSubmission VoiceSubmission?
 }
 
 model TextSubmission {
-  id           String     @id @default(uuid())
+  id           String   @id @default(uuid())
   content      String
   score        Int?
   feedback     String?
-  strengths    String[]   @default([])   // array of strengths
-  improvements String[]   @default([])   // array of areas for improvement
+  strengths    String[] @default([]) // array of strengths
+  improvements String[] @default([]) // array of areas for improvement
 
   submission   Submission @relation(fields: [submissionId], references: [id])
   submissionId String     @unique
 }
 
 model VoiceSubmission {
-  id           String     @id @default(uuid())
+  id           String   @id @default(uuid())
   fileUrl      String
   transcript   String?
   score        Int?
   feedback     String?
-  strengths    String[]   @default([])   // array of strengths
-  improvements String[]   @default([])   // array of areas for improvement
+  strengths    String[] @default([]) // array of strengths
+  improvements String[] @default([]) // array of areas for improvement
 
   submission   Submission @relation(fields: [submissionId], references: [id])
   submissionId String     @unique
 }
 
 model Material {
-  id           String     @id @default(uuid())
-  title        String
-  fileUrl      String
-  uploadedAt   DateTime   @default(now())
+  id         String   @id @default(uuid())
+  title      String
+  fileUrl    String
+  uploadedAt DateTime @default(now())
 
-  classroom    Classroom  @relation(fields: [classroomId], references: [id])
-  classroomId  String
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+  classroomId String
 }
 
 model Announcement {
-  id           String     @id @default(uuid())
-  title        String
-  message      String
-  createdAt    DateTime   @default(now())
+  id        String   @id @default(uuid())
+  title     String
+  message   String
+  createdAt DateTime @default(now())
 
-  classroom    Classroom  @relation(fields: [classroomId], references: [id])
-  classroomId  String
+  classroom   Classroom @relation(fields: [classroomId], references: [id])
+  classroomId String
 }
 
 model Comment {
-  id           String      @id @default(uuid())
-  content      String
-  createdAt    DateTime    @default(now())
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
 
-  author       User        @relation(fields: [authorId], references: [id])
-  authorId     String
+  author   User   @relation(fields: [authorId], references: [id])
+  authorId String
 
   assignment   Assignment? @relation(fields: [assignmentId], references: [id])
   assignmentId String?
 }
 
 model Quiz {
-  id          String        @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   description String?
-  published   Boolean       @default(false)  // true = visible in class, false = private
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  published   Boolean  @default(false) // true = visible in class, false = private
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
   creator     User          @relation("QuizCreator", fields: [creatorId], references: [id])
@@ -174,42 +184,42 @@ model Quiz {
 }
 
 model Question {
-  id        String       @id @default(uuid())
-  question      String
+  id        String   @id @default(uuid())
+  question  String
   options   String[]
   answer    Int
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  quiz      Quiz         @relation(fields: [quizId], references: [id])
+  quiz      Quiz       @relation(fields: [quizId], references: [id])
   quizId    String
   responses Response[]
 }
 
 model QuizAttempt {
-  id          String     @id @default(uuid())
-  score       Int        @default(0)
-  completed   Boolean    @default(false)
-  attemptedAt DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id          String   @id @default(uuid())
+  score       Int      @default(0)
+  completed   Boolean  @default(false)
+  attemptedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  quiz        Quiz       @relation(fields: [quizId], references: [id])
-  quizId      String
-  user        User       @relation("UserAttempts", fields: [userId], references: [id])
-  userId      String
-  responses   Response[]
+  quiz      Quiz       @relation(fields: [quizId], references: [id])
+  quizId    String
+  user      User       @relation("UserAttempts", fields: [userId], references: [id])
+  userId    String
+  responses Response[]
 }
 
 model Response {
-  id             String      @id @default(uuid())
+  id             String   @id @default(uuid())
   selectedOption Int?
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  attempt        QuizAttempt @relation(fields: [attemptId], references: [id])
-  attemptId      String
-  question       Question    @relation(fields: [questionId], references: [id])
-  questionId     String
+  attempt    QuizAttempt @relation(fields: [attemptId], references: [id])
+  attemptId  String
+  question   Question    @relation(fields: [questionId], references: [id])
+  questionId String
 }
 
 // ---------- ENUMS ----------
@@ -222,4 +232,11 @@ enum Role {
 enum AssignmentType {
   TEXT
   VOICE
+}
+
+enum MeetingStatus {
+  ONGOING
+  CANCELED
+  SCHEDULED
+  COMPLETED
 }
