@@ -11,28 +11,15 @@ async def create_meeting(
     meet: CreateMeeting, db=Depends(get_db), teacher=Depends(get_current_teacher)
 ):
     try:
-        pass
+        await db.classmeetings.create(data=meet.model_dump())
+        return {"detail": "meeting created successfully"}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
 
 
-@router.get("/{classId}/list", status_code=status.HTTP_200_OK)
-async def list_meetings(
-    classId: str = Path(..., description="ID of the classroom"),
-    db=Depends(get_db),
-    user=Depends(get_current_user),
-):
-    try:
-        pass
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
-
-
-@router.get("/{meetingId}", status_code=status.HTTP_200_OK)
+@router.get("/{meetingId}/status", status_code=status.HTTP_200_OK)
 async def get_meeting(
     meetingId: str = Path(..., description="ID of the meeting"),
     db=Depends(get_db),
