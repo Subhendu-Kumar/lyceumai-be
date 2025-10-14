@@ -64,6 +64,19 @@ model ClassMeetings {
   classroomId String
   MeetingTime DateTime
   CreatedAt   DateTime      @default(now())
+
+  meetingData MeetingData[]
+}
+
+model MeetingData {
+  id             String        @id @default(uuid())
+  recordingUrl   String?
+  transcript     String?
+  summary        String?
+  classMeeting   ClassMeetings @relation(fields: [classMeetingId], references: [id])
+  classMeetingId String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 }
 
 model Enrollment {
