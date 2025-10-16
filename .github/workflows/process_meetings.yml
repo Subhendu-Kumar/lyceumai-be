@@ -1,55 +1,57 @@
 name: Run Python Script
 
 on:
-    workflow_dispatch: # Manual trigger
-    schedule:
-        # Run at 00:00 IST every day
-        - cron: "40 18 * * *" # GitHub Actions uses UTC, IST = UTC+5:30
+  workflow_dispatch: # Manual trigger
+  push:
+    branches: [main]
+  schedule:
+    # Run at 00:00 IST every day
+    - cron: "40 18 * * *" # GitHub Actions uses UTC, IST = UTC+5:30
 
 jobs:
-    run-script:
-        runs-on: ubuntu-latest
+  run-script:
+    runs-on: ubuntu-latest
 
-        steps:
-            # 1️⃣ Checkout repository
-            - name: Checkout code
-              uses: actions/checkout@v3
+    steps:
+      # 1️⃣ Checkout repository
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-            # 2️⃣ Setup Python environment
-            - name: Set up Python
-              uses: actions/setup-python@v4
-              with:
-                  python-version: "3.11"
+      # 2️⃣ Setup Python environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
 
-            # 3️⃣ Setup Node.js environment
-            - name: Set up Node.js
-              uses: actions/setup-node@v3
-              with:
-                  node-version: "20"
+      # 3️⃣ Setup Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
 
-            # 4️⃣ Install FFmpeg
-            - name: Install FFmpeg
-              run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      # 4️⃣ Install FFmpeg
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-            # 5️⃣ Install Python dependencies
-            - name: Install Python packages
-              run: |
-                  python -m pip install --upgrade pip
-                  pip install -r requirements_new.txt
+      # 5️⃣ Install Python dependencies
+      - name: Install Python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements_new.txt
 
-            # 6️⃣ Load environment variables
-            - name: Load environment variables
-              run: |
-                  echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
-                  echo "STREAM_API_KEY=${{ secrets.STREAM_API_KEY }}" >> $GITHUB_ENV
-                  echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> $GITHUB_ENV
-                  echo "STREAM_API_SECRET=${{ secrets.STREAM_API_SECRET }}" >> $GITHUB_ENV
-                  echo "ASSEMBLY_AI_API_KEY=${{ secrets.ASSEMBLY_AI_API_KEY }}" >> $GITHUB_ENV
+      # 6️⃣ Load environment variables
+      - name: Load environment variables
+        run: |
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+          echo "STREAM_API_KEY=${{ secrets.STREAM_API_KEY }}" >> $GITHUB_ENV
+          echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> $GITHUB_ENV
+          echo "STREAM_API_SECRET=${{ secrets.STREAM_API_SECRET }}" >> $GITHUB_ENV
+          echo "ASSEMBLY_AI_API_KEY=${{ secrets.ASSEMBLY_AI_API_KEY }}" >> $GITHUB_ENV
 
-            # 7️⃣ Generate Prisma client
-            - name: Generate Prisma client
-              run: npx prisma generate
+      # 7️⃣ Generate Prisma client
+      - name: Generate Prisma client
+        run: python3 -m prisma generate
 
-            # 8️⃣ Run the Python script
-            - name: Run Python script
-              run: python scripts/process_meetings.py
+      # 8️⃣ Run the Python script
+      - name: Run Python script
+        run: python scripts/process_meetings.py
