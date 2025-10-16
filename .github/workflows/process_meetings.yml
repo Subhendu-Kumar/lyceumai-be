@@ -4,7 +4,7 @@ on:
     workflow_dispatch: # Manual trigger
     schedule:
         # Run at 00:00 IST every day
-        - cron: "18 18 * * *" # GitHub Actions uses UTC, IST = UTC+5:30
+        - cron: "40 18 * * *" # GitHub Actions uses UTC, IST = UTC+5:30
 
 jobs:
     run-script:
