@@ -2,11 +2,9 @@ name: Run Python Script
 
 on:
   workflow_dispatch: # Manual trigger
-  push:
-    branches: [main]
-  schedule:
-    # Run at 00:00 IST every day
-    - cron: "40 18 */3 * *" # GitHub Actions uses UTC, IST = UTC+5:30
+  # schedule:
+  # Run at 00:00 IST every 3rd day (GitHub Actions uses UTC, IST = UTC+5:30)
+  #   - cron: "40 18 */3 * *"
 
 jobs:
   run-script:
