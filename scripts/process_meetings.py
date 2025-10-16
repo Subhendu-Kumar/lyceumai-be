@@ -160,14 +160,14 @@ async def main():
             else:
                 summary_text = await summarize_transcript(transcript_text)
 
-            await db.meetingdata.update(
-                where={"classMeetingId": meet_id},
-                data={
-                    "recordingUrl": url,
-                    "transcript": transcript_text,
-                    "summary": summary_text,
-                },
-            )
+            # await db.meetingdata.update(
+            #     where={"classMeetingId": meet_id},
+            #     data={
+            #         "recordingUrl": url,
+            #         "transcript": transcript_text,
+            #         "summary": summary_text,
+            #     },
+            # )
 
             print(f"Recording URL: {url}")
             print(f"Summary: {summary_text}")
