@@ -1,16 +1,18 @@
 import os
-from dotenv import load_dotenv
-import requests
-import asyncio
 import json
+import asyncio
 import aiohttp
+import requests
 import subprocess
 from io import BytesIO
-from pydantic import BaseModel
 from typing import List
 import assemblyai as aai
 from prisma import Prisma
 from getstream import Stream
+from dotenv import load_dotenv
+from pydantic import BaseModel
+from langchain.prompts import PromptTemplate
+from langchain_core.output_parsers import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
@@ -46,6 +48,31 @@ client = Stream(
 class Recording(BaseModel):
     url: str
     date: str
+
+
+# prompt
+summary_template = PromptTemplate(
+    input_variables=["transcript"],
+    template="""
+    You are an expert meeting summarizer.
+    Your task is to analyze the following meeting transcript and generate a clear, structured summary.
+
+    Transcript: {transcript}
+
+    Your summary should include:
+        Meeting Title / Topic – What the meeting was mainly about.
+        Date & Participants (if mentioned) – Who attended.
+        Key Discussion Points – Main topics covered.
+        Decisions Made – Summarize any decisions or agreements.
+        Action Items – Tasks assigned, with responsible persons (if stated).
+        Unresolved Issues / Follow-ups – Pending items or questions for next meeting.
+        Overall Summary (3–5 sentences) – A concise paragraph summarizing the meeting outcome.
+    """,
+)
+
+
+# output parser
+parser = StrOutputParser()
 
 
 def create_stream_token() -> str:
@@ -99,6 +126,12 @@ async def transcribe_file(audio_path: str) -> str:
     return transcript.text
 
 
+async def summarize_transcript(transcript: str) -> str:
+    chain = summary_template | gemini | parser
+    summary = chain.invoke({"transcript": transcript})
+    return summary
+
+
 async def main():
     await db.connect()
     meetings = await db.classmeetings.find_many(
@@ -115,14 +148,29 @@ async def main():
         for recording in recordings:
             url = recording.url
             # date = recording.date
-            video_path = f"{meeting_id}.mp4"
-            audio_path = f"{meeting_id}.mp3"
+            video_path = os.path.join(f"{meeting_id}.mp4")
+            audio_path = os.path.join(f"{meeting_id}.mp3")
 
             await download_video(url, video_path)
             convert_to_audio(video_path, audio_path)
 
             transcript_text = await transcribe_file(audio_path)
+            if not transcript_text:
+                continue
+            else:
+                summary_text = await summarize_transcript(transcript_text)
 
+            await db.meetingdata.update(
+                where={"classMeetingId": meet_id},
+                data={
+                    "recordingUrl": url,
+                    "transcript": transcript_text,
+                    "summary": summary_text,
+                },
+            )
+
+            print(f"Recording URL: {url}")
+            print(f"Summary: {summary_text}")
             print(f"Meeting ID: {meeting_id}")
             print(f"Transcript: {transcript_text}")
             print("\n\n\n")

@@ -1,0 +1,10 @@
+aiohttp==3.12.15
+assemblyai==0.43.1
+requests==2.32.5
+prisma==0.15.0
+getstream==2.4.4
+python-dotenv==1.1.1
+pydantic==2.11.7
+langchain==0.3.27
+langchain-core==0.3.75
+langchain-google-genai==2.1.9
