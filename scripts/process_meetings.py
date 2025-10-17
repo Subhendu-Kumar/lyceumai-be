@@ -48,6 +48,7 @@ client = Stream(
 class Recording(BaseModel):
     url: str
     date: str
+    session_id: str
 
 
 # prompt
@@ -94,7 +95,11 @@ async def get_recordings(meeting_id: str) -> List[Recording]:
         )
         response.raise_for_status()
         recordings = [
-            Recording(url=rec.get("url", ""), date=rec.get("end_time", ""))
+            Recording(
+                url=rec.get("url", ""),
+                date=rec.get("end_time", ""),
+                session_id=rec.get("session_id", ""),
+            )
             for rec in response.json().get("recordings", [])
         ]
         return recordings
@@ -135,7 +140,7 @@ async def summarize_transcript(transcript: str) -> str:
 async def main():
     await db.connect()
     meetings = await db.classmeetings.find_many(
-        where={"meetingData": {"some": {"transcript": None, "summary": None}}},
+        where={"meetingData": {"none": {}}},
     )
     meeting_ids = [{"id": m.id, "meetId": m.meetId} for m in meetings if m.meetId]
 
@@ -147,7 +152,9 @@ async def main():
 
         for recording in recordings:
             url = recording.url
-            # date = recording.date
+            meet_date = recording.date
+            session_id = recording.session_id
+
             video_path = os.path.join(f"{meeting_id}.mp4")
             audio_path = os.path.join(f"{meeting_id}.mp3")
 
@@ -155,19 +162,24 @@ async def main():
             convert_to_audio(video_path, audio_path)
 
             transcript_text = await transcribe_file(audio_path)
+
             if not transcript_text:
-                continue
+                transcript_text = "failed to get transcript"
+                summary_text = "no transcript available"
             else:
                 summary_text = await summarize_transcript(transcript_text)
+                if not summary_text:
+                    summary_text = "failed to summarize transcript"
 
-            # await db.meetingdata.update(
-            #     where={"classMeetingId": meet_id},
-            #     data={
-            #         "recordingUrl": url,
-            #         "transcript": transcript_text,
-            #         "summary": summary_text,
-            #     },
-            # )
+            await db.meetingdata.create(
+                data={
+                    "sessionId": session_id,
+                    "classMeetingId": meet_id,
+                    "transcript": transcript_text,
+                    "summary": summary_text,
+                    "meetingCompletionTime": meet_date,
+                }
+            )
 
             print(f"Recording URL: {url}")
             print(f"Summary: {summary_text}")
