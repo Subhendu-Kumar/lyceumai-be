@@ -11,8 +11,7 @@ async def create_meeting(
     meet: CreateMeeting, db=Depends(get_db), teacher=Depends(get_current_teacher)
 ):
     try:
-        class_meeting = await db.classmeetings.create(data=meet.model_dump())
-        await db.meetingdata.create(data={"classMeetingId": class_meeting.id})
+        await db.classmeetings.create(data=meet.model_dump())
         return {"detail": "meeting created successfully"}
     except Exception as e:
         raise HTTPException(

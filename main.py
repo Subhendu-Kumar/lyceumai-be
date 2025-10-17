@@ -1,24 +1,20 @@
+from routes import (
+    auth,
+    class_student,
+    classroom_quiz,
+    classroom_admin,
+    classroom_comment,
+    classroom_meetings,
+    classroom_materials,
+    classroom_enrollment,
+    classroom_announcement,
+    class_assignment_student,
+    classroom_assignment_admin,
+)
 from fastapi import FastAPI, status
 from contextlib import asynccontextmanager
 from utils.db_util import lifespan_manager
 from fastapi.middleware.cors import CORSMiddleware
-from routes import (
-    auth,
-    classroom_admin,
-    mermaid_gen_test,
-    classroom_materials,
-    classroom_enrollment,
-    voice_assignment_test,
-    classroom_announcement,
-    classroom_comment,
-    classroom_quiz,
-    class_student,
-    classroom_assignment_admin,
-    class_assignment_student,
-    classroom_meetings,
-)
-
-from chatbots.class_materials_bot import chat_router
 
 
 # Lifespan event handler
@@ -46,14 +42,8 @@ app.add_middleware(
     allow_credentials=True,
 )
 
-# Include routers
-
 # Auth routes
 app.include_router(auth.router)
-
-# Test routes
-app.include_router(voice_assignment_test.router)
-app.include_router(mermaid_gen_test.router)
 
 # classroom routes
 app.include_router(classroom_admin.router)
@@ -69,8 +59,6 @@ app.include_router(class_student.router)
 app.include_router(class_assignment_student.router)
 
 app.include_router(classroom_meetings.router)
-
-app.include_router(chat_router)
 
 
 # Root endpoint
