@@ -3,7 +3,7 @@ import uuid
 import requests
 import datetime
 from dotenv import load_dotenv
-from utils.stream_util import create_stream_token, get_meetings
+from utils.stream_util import create_stream_token, get_meetings, get_recording_by_meet_id
 import asyncio
 
 load_dotenv()
@@ -66,8 +66,5 @@ async def test_create_video_call():
 
 if __name__ == "__main__":
     asyncio.run(
-        get_meetings(
-            user_id="36e46a5f-8037-42b6-a957-da8db3894680",
-            class_id="baad0fee-7518-4b13-9aa6-a3f7ba666e47",
-        )
+        get_recording_by_meet_id("624c831c-5f10-46db-8143-c4cdd21fdc07")
     )
