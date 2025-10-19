@@ -1,5 +1,6 @@
-from pydantic import BaseModel
 from enum import Enum
+from pydantic import BaseModel
+from typing import Optional
 
 
 class MeetingStatus(str, Enum):
@@ -10,7 +11,7 @@ class MeetingStatus(str, Enum):
 
 
 class CreateMeeting(BaseModel):
-    meetId: str
+    description: str
     classroomId: str
     meetStatus: MeetingStatus
-    MeetingTime: str  # ISO 8601 format
+    meetingTime: Optional[str] = None

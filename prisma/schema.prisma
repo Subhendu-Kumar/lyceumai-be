@@ -59,6 +59,7 @@ model Classroom {
 model ClassMeetings {
   id          String        @id @default(uuid())
   meetId      String        @unique
+  description String?
   meetStatus  MeetingStatus @default(SCHEDULED)
   classroom   Classroom     @relation(fields: [classroomId], references: [id])
   classroomId String

@@ -1,4 +1,5 @@
 from utils.db_util import get_db
+from utils.stream_util import stream_create_meeting
 from schemas.meetings import CreateMeeting, MeetingStatus
 from utils.user_util import get_current_user, get_current_teacher
 from fastapi import APIRouter, HTTPException, Depends, status, Path
@@ -11,8 +12,22 @@ async def create_meeting(
     meet: CreateMeeting, db=Depends(get_db), teacher=Depends(get_current_teacher)
 ):
     try:
-        await db.classmeetings.create(data=meet.model_dump())
-        return {"detail": "meeting created successfully"}
+        call = await stream_create_meeting(
+            user_id=teacher.id,
+            class_id=meet.classroomId,
+            start_time=meet.meetingTime,
+            description=meet.description,
+        )
+        await db.classmeetings.create(
+            data={
+                "meetId": call["id"],
+                "meetStatus": meet.meetStatus,
+                "classroomId": call["classId"],
+                "MeetingTime": call["start_time"],
+                "description": call["description"],
+            }
+        )
+        return {"detail": "meeting created successfully", "meetId": call["id"]}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
