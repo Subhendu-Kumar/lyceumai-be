@@ -1,24 +1,17 @@
-from utils.db_util import get_db
 from utils.stream_util import (
-    stream_create_meeting,
+    Recording,
     CallbackData,
     get_meetings,
+    stream_create_meeting,
     get_recording_by_meet_id,
-    Recording,
 )
+from typing import List
+from utils.db_util import get_db
 from schemas.meetings import CreateMeeting, MeetingStatus
 from utils.user_util import get_current_user, get_current_teacher
 from fastapi import APIRouter, HTTPException, Depends, status, Path
-from enum import Enum
-from typing import List
-from datetime import datetime
 
 router = APIRouter(prefix="/meeting", tags=["Classroom Meetings"])
-
-
-class MeetingType(str, Enum):
-    ended = "ended"
-    upcoming = "upcoming"
 
 
 @router.post("/create", status_code=status.HTTP_201_CREATED)
@@ -48,30 +41,16 @@ async def create_meeting(
         )
 
 
-@router.get("/list/{class_id}/{type}", status_code=status.HTTP_200_OK)
+@router.get("/list/{class_id}", status_code=status.HTTP_200_OK)
 async def get_all_meets_by_class_id(
     class_id: str = Path(..., description="ID of the class"),
-    type: MeetingType = Path(..., description="Type of the meeting"),
     user=Depends(get_current_user),
 ):
     try:
         meetings: List[CallbackData] = await get_meetings(
             class_id=class_id, user_id=user.id
         )
-        now = datetime.now().isoformat()
-        filtered: List[CallbackData] = []
-        if type == MeetingType.ended:
-            filtered = [m for m in meetings if m.end_time is not None]
-        elif type == MeetingType.upcoming:
-            filtered = [
-                m
-                for m in meetings
-                if (m.start_time and m.start_time > now) or m.end_time is None
-            ]
-        else:
-            filtered = meetings
-
-        return {"meetings": filtered}
+        return {"meetings": meetings}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
