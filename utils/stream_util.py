@@ -57,7 +57,7 @@ async def stream_create_meeting(
 
     url = f"{MEETING_API_BASE_URL}/{MEETING_TYPE}/{unique_meeting_id}?api_key={STREAM_API_KEY}"
 
-    token = await create_stream_token(user_id)
+    token = await create_stream_token(user_id=user_id)
 
     headers = {
         "accept": "application/json",
@@ -100,7 +100,7 @@ async def get_meetings(user_id: str, class_id: str) -> List[CallbackData]:
     try:
         url = f"{MEETING_API_BASE_URL}s?api_key={STREAM_API_KEY}"
 
-        token = await create_stream_token(user_id)
+        token = await create_stream_token(user_id=user_id)
 
         headers = {
             "accept": "application/json",

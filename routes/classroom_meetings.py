@@ -108,7 +108,7 @@ async def get_meeting_details(
             "meetId": meeting.meetId,
             "meetStatus": meeting.meetStatus,
             "classroomId": meeting.classroomId,
-            "MeetingTime": meeting.MeetingTime,
+            "meetingTime": meeting.MeetingTime,
             "description": meeting.description,
             "recordings": rec_data,
         }
