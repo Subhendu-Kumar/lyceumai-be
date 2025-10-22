@@ -44,12 +44,14 @@ async def create_meeting(
 @router.get("/list/{class_id}", status_code=status.HTTP_200_OK)
 async def get_all_meets_by_class_id(
     class_id: str = Path(..., description="ID of the class"),
+    db=Depends(get_db),
     user=Depends(get_current_user),
 ):
     try:
-        meetings: List[CallbackData] = await get_meetings(
-            class_id=class_id, user_id=user.id
-        )
+        # meetings: List[CallbackData] = await get_meetings(
+        #     class_id=class_id, user_id=user.id
+        # )
+        meetings = await db.classmeetings.find_many(where={"classroomId": class_id})
         return {"meetings": meetings}
     except Exception as e:
         raise HTTPException(

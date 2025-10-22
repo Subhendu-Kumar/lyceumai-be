@@ -1,11 +1,11 @@
 import os
 import uuid
 import requests
+from typing import List
 from getstream import Stream
 from datetime import datetime
 from dotenv import load_dotenv
 from pydantic import BaseModel
-from typing import List
 
 load_dotenv()
 
