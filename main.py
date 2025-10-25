@@ -10,11 +10,14 @@ from routes import (
     classroom_announcement,
     class_assignment_student,
     classroom_assignment_admin,
+    mermaid_gen_test,
 )
 from fastapi import FastAPI, status
 from contextlib import asynccontextmanager
 from utils.db_util import lifespan_manager
 from fastapi.middleware.cors import CORSMiddleware
+
+from services.notification_service import notification_service_router
 
 
 # Lifespan event handler
@@ -59,6 +62,10 @@ app.include_router(class_student.router)
 app.include_router(class_assignment_student.router)
 
 app.include_router(classroom_meetings.router)
+
+app.include_router(mermaid_gen_test.router)
+
+app.include_router(notification_service_router)
 
 
 # Root endpoint

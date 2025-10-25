@@ -34,6 +34,16 @@ model User {
   comments     Comment[]
   quizzes      Quiz[]        @relation("QuizCreator")
   quizAttempts QuizAttempt[] @relation("UserAttempts")
+  fcmToken     FCMToken?     @relation("UserFCMToken")
+}
+
+model FCMToken {
+  id        String   @id @default(uuid())
+  fcmToken  String
+  user      User     @relation("UserFCMToken", fields: [userId], references: [id])
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Classroom {
