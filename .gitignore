@@ -192,3 +192,6 @@ Thumbs.db
 
 # Project specific
 migration_lock.toml
+
+# firebase cred file
+lyceumai-*.json

@@ -1,39 +1,41 @@
-from pydantic import BaseModel
-from utils.db_util import get_db
-from utils.user_util import get_current_user
-from fastapi import APIRouter, status, HTTPException, Depends
-
-notification_service_router = APIRouter(
-    prefix="/fcm", tags=["FCM Notification Service"]
+import firebase_admin
+from typing import List
+from firebase_admin import credentials
+from firebase_admin.messaging import (
+    Notification,
+    AndroidConfig,
+    MulticastMessage,
+    AndroidNotification,
+    send_each_for_multicast_async,
 )
 
+cred = credentials.Certificate(
+    "lyceumai-notification-firebase-adminsdk-fbsvc-de004a5937.json"
+)
+firebase_admin.initialize_app(cred)
 
-class FCMTokenRequest(BaseModel):
-    token: str
 
+async def send_fcm_notification(title: str, body: str, route: str, tokens: List[str]):
+    message = MulticastMessage(
+        notification=Notification(
+            title=title,
+            body=body,
+        ),
+        data={
+            "click_action": "FLUTTER_NOTIFICATION_CLICK",
+            "route": route,
+        },
+        android=AndroidConfig(
+            priority="high",
+            notification=AndroidNotification(
+                channel_id="high_importance_channel",
+            ),
+        ),
+        tokens=tokens,
+    )
 
-@notification_service_router.post("/add-token", status_code=status.HTTP_200_OK)
-async def add_fcm_token(
-    data: FCMTokenRequest, db=Depends(get_db), user=Depends(get_current_user)
-):
-    try:
-        user_id = user.id
-        new_token = data.token
-        await db.fcmtoken.upsert(
-            where={"userId": user_id},
-            data={
-                "create": {
-                    "userId": user_id,
-                    "fcmToken": new_token,
-                },
-                "update": {
-                    "fcmToken": new_token,
-                },
-            },
-        )
-        return {"detail": "FCM token added/updated successfully"}
-    except Exception as e:
-        print(f"Error adding FCM token: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
-        )
+    response = await send_each_for_multicast_async(message)
+
+    print(
+        f"FCM Notification :\n\nSuccess: {response.success_count}, Failure: {response.failure_count}"
+    )

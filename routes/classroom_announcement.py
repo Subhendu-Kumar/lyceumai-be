@@ -1,6 +1,8 @@
 from utils.db_util import get_db
 from utils.user_util import get_current_teacher
-from fastapi import APIRouter, status, Depends, HTTPException, Path
+from utils.get_fcm_tokens import get_fcm_tokens
+from services.notification_service import send_fcm_notification
+from fastapi import APIRouter, status, Depends, HTTPException, Path, BackgroundTasks
 from schemas.classroom import ClassAnnouncementCreate, ClassAnnouncementUpdate
 
 router = APIRouter(prefix="/class", tags=["Classroom Announcements"])
@@ -9,6 +11,7 @@ router = APIRouter(prefix="/class", tags=["Classroom Announcements"])
 @router.post("/announcement", status_code=status.HTTP_201_CREATED)
 async def create_announcement(
     announcement: ClassAnnouncementCreate,
+    background_tasks: BackgroundTasks,
     teacher=Depends(get_current_teacher),
     db=Depends(get_db),
 ):
@@ -27,7 +30,17 @@ async def create_announcement(
                 "classroomId": announcement.class_id,
             }
         )
-        # TODO implement notification
+
+        tokens = await get_fcm_tokens(existing_class.id, db)
+
+        background_tasks.add_task(
+            send_fcm_notification,
+            title="📢 New Announcement",
+            body=new_announcement.title,
+            route=f"/class/{existing_class.id}",
+            tokens=tokens,
+        )
+
         return {"announcement": new_announcement}
     except Exception as e:
         raise HTTPException(

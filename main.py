@@ -16,8 +16,7 @@ from fastapi import FastAPI, status
 from contextlib import asynccontextmanager
 from utils.db_util import lifespan_manager
 from fastapi.middleware.cors import CORSMiddleware
-
-from services.notification_service import notification_service_router
+from routes.fcm_route import notification_service_router
 
 
 # Lifespan event handler
