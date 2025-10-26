@@ -1,3 +1,4 @@
+import os
 import firebase_admin
 from typing import List
 from firebase_admin import credentials
@@ -9,9 +10,20 @@ from firebase_admin.messaging import (
     send_each_for_multicast_async,
 )
 
-cred = credentials.Certificate(
-    "lyceumai-notification-firebase-adminsdk-fbsvc-de004a5937.json"
-)
+possible_paths = [
+    "lyceumai-notification-firebase-adminsdk-fbsvc-de004a5937.json",
+    "/etc/secrets/lyceumai-notification-firebase-adminsdk-fbsvc-de004a5937.json",
+]
+
+for path in possible_paths:
+    if os.path.exists(path):
+        cred_path = path
+        break
+else:
+    raise FileNotFoundError("Firebase credentials not found in any known path.")
+
+cred = credentials.Certificate(cred_path)
+
 firebase_admin.initialize_app(cred)
 
 
