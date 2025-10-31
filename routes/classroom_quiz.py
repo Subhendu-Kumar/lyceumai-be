@@ -6,9 +6,10 @@ from utils.gemini_util import gemini
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from utils.user_util import get_current_user, get_current_student
-from fastapi import APIRouter, HTTPException, Depends, status, Path
+from fastapi import APIRouter, HTTPException, Depends, status, Path, BackgroundTasks
 from schemas.classroom import ClassQuizBody, QuizResponse, QuizResponseSub
 from utils.chroma_util import syllabus_vector_store, class_material_vector_store
+from utils.background_tasks_util import get_tokens_and_send_notification
 
 load_dotenv()
 
@@ -128,7 +129,8 @@ async def get_all_quizzes_of_class(
 
 @router.get("/{quiz_id}", status_code=status.HTTP_200_OK)
 async def get_quiz_by_id(
-    quiz_id: str = Path(..., description="ID of the quiz"), db=Depends(get_db)
+    quiz_id: str = Path(..., description="ID of the quiz"),
+    db=Depends(get_db),
 ):
     try:
         quiz = await db.quiz.find_first(
@@ -143,10 +145,22 @@ async def get_quiz_by_id(
 
 @router.patch("/publish/{quiz_id}", status_code=status.HTTP_202_ACCEPTED)
 async def publish_quiz(
-    quiz_id: str = Path(..., description="Id of the quiz"), db=Depends(get_db)
+    background_tasks: BackgroundTasks,
+    quiz_id: str = Path(..., description="Id of the quiz"),
+    db=Depends(get_db),
 ):
     try:
-        await db.quiz.update(where={"id": quiz_id}, data={"published": True})
+        quiz = await db.quiz.update(where={"id": quiz_id}, data={"published": True})
+
+        background_tasks.add_task(
+            get_tokens_and_send_notification,
+            title=f"New ⁉️ Added",
+            body=quiz.title,
+            class_id=quiz.classroomId,
+            db=db,
+            sub_route="/quizzes",
+        )
+
         return {"detail": "Quiz published successfully"}
     except Exception as e:
         raise HTTPException(

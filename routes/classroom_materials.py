@@ -18,7 +18,9 @@ from fastapi import (
     APIRouter,
     UploadFile,
     HTTPException,
+    BackgroundTasks,
 )
+from utils.background_tasks_util import get_tokens_and_send_notification
 
 load_dotenv()
 
@@ -27,6 +29,7 @@ router = APIRouter(prefix="/class", tags=["Classroom Materials"])
 
 @router.post("/material", status_code=status.HTTP_201_CREATED)
 async def create_material(
+    background_tasks: BackgroundTasks,
     title: str = Form(...),
     file: UploadFile = File(...),
     classroomId: str = Form(...),
@@ -74,6 +77,15 @@ async def create_material(
             doc.metadata["material_id"] = material.id
             doc.metadata["class_id"] = existing_class.id
         class_material_vector_store.add_documents(docs)
+
+        background_tasks.add_task(
+            get_tokens_and_send_notification,
+            title=f"New 📖 Added to {existing_class.name}",
+            body=material.title,
+            class_id=existing_class.id,
+            db=db,
+            sub_route="/materials"
+        )
 
         return {"material": material}
     except Exception as e:

@@ -1,8 +1,9 @@
 import asyncio
 from utils.db_util import get_db
-from utils.user_util import get_current_user, get_current_teacher
-from fastapi import APIRouter, HTTPException, Depends, status, Path
+from utils.user_util import get_current_student, get_current_teacher, get_current_user
+from fastapi import APIRouter, HTTPException, Depends, status, Path, BackgroundTasks
 from schemas.classroom import AddStudentToClass, RemoveStudentFromClass
+from utils.background_tasks_util import get_tokens_and_send_notification
 
 
 router = APIRouter(prefix="/class", tags=["Class Room Enrollment"])
@@ -11,7 +12,7 @@ router = APIRouter(prefix="/class", tags=["Class Room Enrollment"])
 @router.post("/enroll/s/{code}", status_code=status.HTTP_200_OK)
 async def enroll_student(
     code: str = Path(..., description="code of the classroom"),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_student),
     db=Depends(get_db),
 ):
     try:
@@ -36,7 +37,7 @@ async def enroll_student(
 @router.delete("/unenroll/s/{classId}", status_code=status.HTTP_202_ACCEPTED)
 async def unenroll_student(
     classId: str = Path(..., description="ID of the classroom"),
-    user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_student),
     db=Depends(get_db),
 ):
     try:
@@ -59,7 +60,10 @@ async def unenroll_student(
 
 @router.post("/add/student", status_code=status.HTTP_201_CREATED)
 async def add_student_to_class(
-    data: AddStudentToClass, teacher=Depends(get_current_teacher), db=Depends(get_db)
+    data: AddStudentToClass,
+    background_tasks: BackgroundTasks,
+    teacher=Depends(get_current_teacher),
+    db=Depends(get_db),
 ):
     try:
         class_room, student = await asyncio.gather(
@@ -81,6 +85,15 @@ async def add_student_to_class(
         enrollment = await db.enrollment.create(
             data={"studentId": student.id, "classroomId": class_room.id}
         )
+
+        background_tasks.add_task(
+            get_tokens_and_send_notification,
+            title=f"New 👥 Added to {class_room.name}",
+            body=student.name,
+            class_id=class_room.id,
+            db=db,
+        )
+
         return {
             "detail": "Student added to class successfully",
             "enrollment": enrollment,

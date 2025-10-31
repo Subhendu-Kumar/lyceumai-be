@@ -1,7 +1,8 @@
 from utils.db_util import get_db
 from schemas.assignment import AssignmentBase
 from utils.user_util import get_current_teacher
-from fastapi import APIRouter, HTTPException, Depends, status, Path
+from fastapi import APIRouter, HTTPException, Depends, status, Path, BackgroundTasks
+from utils.background_tasks_util import get_tokens_and_send_notification
 
 router = APIRouter(prefix="/assignment", tags=["Classroom Assignment Admin"])
 
@@ -9,6 +10,7 @@ router = APIRouter(prefix="/assignment", tags=["Classroom Assignment Admin"])
 @router.post("/create/{classroom_id}", status_code=status.HTTP_201_CREATED)
 async def create_assignment(
     data: AssignmentBase,
+    background_tasks: BackgroundTasks,
     classroom_id: str = Path(..., description="ID of the classroom"),
     teacher=Depends(get_current_teacher),
     db=Depends(get_db),
@@ -30,6 +32,16 @@ async def create_assignment(
                 "referenceAns": data.referenceAns,
             },
         )
+
+        background_tasks.add_task(
+            get_tokens_and_send_notification,
+            title=f"New 📖 Added to {existing_class.name}",
+            body=assignment.title,
+            class_id=existing_class.id,
+            db=db,
+            sub_route="/assignments",
+        )
+
         return {"assignment": assignment, "detail": "Assignment created successfully"}
     except Exception as e:
         raise HTTPException(

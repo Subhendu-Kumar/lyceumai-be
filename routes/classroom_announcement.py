@@ -1,7 +1,6 @@
 from utils.db_util import get_db
 from utils.user_util import get_current_teacher
-from utils.get_fcm_tokens import get_fcm_tokens
-from services.notification_service import send_fcm_notification
+from utils.background_tasks_util import get_tokens_and_send_notification
 from fastapi import APIRouter, status, Depends, HTTPException, Path, BackgroundTasks
 from schemas.classroom import ClassAnnouncementCreate, ClassAnnouncementUpdate
 
@@ -31,14 +30,12 @@ async def create_announcement(
             }
         )
 
-        tokens = await get_fcm_tokens(existing_class.id, db)
-
         background_tasks.add_task(
-            send_fcm_notification,
+            get_tokens_and_send_notification,
             title="📢 New Announcement",
             body=new_announcement.title,
-            route=f"/class/{existing_class.id}",
-            tokens=tokens,
+            class_id=existing_class.id,
+            db=db,
         )
 
         return {"announcement": new_announcement}
@@ -66,6 +63,7 @@ async def get_announcements(
 @router.put("/announcement/{announcement_id}", status_code=status.HTTP_200_OK)
 async def update_announcement(
     announcement: ClassAnnouncementUpdate,
+    background_tasks: BackgroundTasks,
     announcement_id: str = Path(..., description="ID of the announcement"),
     teacher=Depends(get_current_teacher),
     db=Depends(get_db),
@@ -85,7 +83,15 @@ async def update_announcement(
                 "message": announcement.message,
             },
         )
-        # TODO notification to user
+
+        background_tasks.add_task(
+            get_tokens_and_send_notification,
+            title="Announcement Updated",
+            body=updated_announcement.title,
+            class_id=updated_announcement.classroomId,
+            db=db,
+        )
+
         return {"announcement": updated_announcement}
     except Exception as e:
         raise HTTPException(
