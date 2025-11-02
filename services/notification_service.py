@@ -11,8 +11,8 @@ from firebase_admin.messaging import (
 )
 
 possible_paths = [
-    "lyceumai-notification-firebase-adminsdk-fbsvc-de004a5937.json",
-    "/etc/secrets/lyceumai-notification-firebase-adminsdk-fbsvc-de004a5937.json",
+    "lyceumai-notification-firebase.json",
+    "/etc/secrets/lyceumai-notification-firebase.json",
 ]
 
 for path in possible_paths:
