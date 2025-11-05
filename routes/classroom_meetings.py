@@ -1,7 +1,6 @@
 from utils.stream_util import (
     Recording,
     CallbackData,
-    get_meetings,
     stream_create_meeting,
     get_recording_by_meet_id,
 )
@@ -48,9 +47,6 @@ async def get_all_meets_by_class_id(
     user=Depends(get_current_user),
 ):
     try:
-        # meetings: List[CallbackData] = await get_meetings(
-        #     class_id=class_id, user_id=user.id
-        # )
         meetings = await db.classmeetings.find_many(where={"classroomId": class_id})
         return {"meetings": meetings}
     except Exception as e:
@@ -144,7 +140,9 @@ async def update_meeting_status(
     teacher=Depends(get_current_teacher),
 ):
     try:
-        pass
+        await db.classmeetings.update(
+            where={"meetId": meetingId}, data={"meetStatus": status}
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
