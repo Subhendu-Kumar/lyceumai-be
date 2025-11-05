@@ -29,7 +29,10 @@ jobs:
 
       # 4️⃣ Install FFmpeg
       - name: Install FFmpeg
-        run: sudo apt-get install -y ffmpeg
+        run: |
+          sudo apt-get clean
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
 
       # 5️⃣ Install Python dependencies
       - name: Install Python packages
