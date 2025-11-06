@@ -1,9 +1,9 @@
 import asyncio
 from utils.db_util import get_db
-from utils.user_util import get_current_student, get_current_teacher, get_current_user
-from fastapi import APIRouter, HTTPException, Depends, status, Path, BackgroundTasks
 from schemas.classroom import AddStudentToClass, RemoveStudentFromClass
 from utils.background_tasks_util import get_tokens_and_send_notification
+from fastapi import APIRouter, HTTPException, Depends, status, Path, BackgroundTasks
+from utils.user_util import get_current_student, get_current_teacher, get_current_user
 
 
 router = APIRouter(prefix="/class", tags=["Class Room Enrollment"])
@@ -31,7 +31,7 @@ async def enroll_student(
         )
         return {"detail": "Student enrolled successfully", "enrollment": enrolled}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/unenroll/s/{classId}", status_code=status.HTTP_202_ACCEPTED)
@@ -55,7 +55,7 @@ async def unenroll_student(
         )
         return {"detail": "Student unenrolled successfully"}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/add/student", status_code=status.HTTP_201_CREATED)
@@ -99,7 +99,7 @@ async def add_student_to_class(
             "enrollment": enrollment,
         }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/remove/student", status_code=status.HTTP_202_ACCEPTED)
@@ -126,7 +126,7 @@ async def remove_student_from_class(
         )
         return {"detail": "Student removed from class successfully"}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/peoples/{classId}", status_code=status.HTTP_200_OK)
@@ -146,4 +146,28 @@ async def get_class_peoples(
         )
         return {"students": students}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/peoples/{classId}/all", status_code=status.HTTP_200_OK)
+async def get_all_class_peoples(
+    classId: str = Path(..., description="ID of the classroom"),
+    user=Depends(get_current_user),
+    db=Depends(get_db),
+):
+    try:
+        class_room = await db.classroom.find_unique(where={"id": classId})
+        if not class_room:
+            raise HTTPException(status_code=404, detail="Classroom not found")
+
+        teacher = await db.user.find_unique(where={"id": class_room.teacherId})
+
+        students = await db.enrollment.find_many(
+            where={"classroomId": class_room.id},
+            include={"student": True},
+            order={"joinedAt": "desc"},
+        )
+
+        return {"students": students, "teacher": teacher}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
