@@ -8,14 +8,18 @@ from typing import List
 from utils.db_util import get_db
 from schemas.meetings import CreateMeeting, MeetingStatus
 from utils.user_util import get_current_user, get_current_teacher
-from fastapi import APIRouter, HTTPException, Depends, status, Path
+from utils.background_tasks_util import get_tokens_and_send_notification
+from fastapi import APIRouter, HTTPException, Depends, status, Path, BackgroundTasks
 
 router = APIRouter(prefix="/meeting", tags=["Classroom Meetings"])
 
 
 @router.post("/create", status_code=status.HTTP_201_CREATED)
 async def create_meeting(
-    meet: CreateMeeting, db=Depends(get_db), teacher=Depends(get_current_teacher)
+    meet: CreateMeeting,
+    background_tasks: BackgroundTasks,
+    db=Depends(get_db),
+    teacher=Depends(get_current_teacher),
 ):
     try:
         call: CallbackData = await stream_create_meeting(
@@ -24,15 +28,24 @@ async def create_meeting(
             start_time=meet.meetingTime,
             description=meet.description,
         )
-        await db.classmeetings.create(
+        meeting = await db.classmeetings.create(
             data={
                 "meetId": call.id,
-                "meetStatus": meet.meetStatus,
                 "classroomId": call.classId,
+                "meetStatus": meet.meetStatus,
                 "MeetingTime": call.start_time,
                 "description": call.description,
             }
         )
+
+        background_tasks.add_task(
+            get_tokens_and_send_notification,
+            title=f"Class Meeting {'Scheduled' if meeting.meetStatus == 'SCHEDULED' else 'Started'} 📅",
+            body=meeting.description,
+            class_id=meeting.classroomId,
+            db=db,
+        )
+
         return {"detail": "meeting created successfully", "meetId": call.id}
     except Exception as e:
         raise HTTPException(
@@ -143,6 +156,27 @@ async def update_meeting_status(
         await db.classmeetings.update(
             where={"meetId": meetingId}, data={"meetStatus": status}
         )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
+@router.get("/{class_id}/ongoing", status_code=status.HTTP_200_OK)
+async def get_ongoing_meeting(
+    class_id: str = Path(..., description="ID of the class"),
+    db=Depends(get_db),
+    user=Depends(get_current_user),
+):
+    try:
+        meeting = await db.classmeetings.find_first(
+            where={"classroomId": class_id, "meetStatus": "ONGOING"}
+        )
+        if not meeting:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="No ongoing meeting found"
+            )
+        return {"meeting": meeting}
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
