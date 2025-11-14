@@ -1,10 +1,14 @@
 name: Process Meetings
 
 on:
-  workflow_dispatch: # Manual trigger
-  # schedule:
-  # Run at 00:00 IST every 3rd day (GitHub Actions uses UTC, IST = UTC+5:30)
-  #   - cron: "40 18 */3 * *"
+  workflow_dispatch:
+  schedule:
+    # 12:00 AM IST
+    - cron: "30 18 * * *"
+    # 8:00 AM IST
+    - cron: "30 2 * * *"
+    # 4:00 PM IST
+    - cron: "30 10 * * *"
 
 jobs:
   run-script:
