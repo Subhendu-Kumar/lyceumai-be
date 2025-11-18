@@ -226,6 +226,29 @@ async def attempt_quiz(
         )
 
 
+@router.get("/attempt/{quiz_id}/ids", status_code=status.HTTP_200_OK)
+async def attempt_quiz(
+    quiz_id: str = Path(..., description="Id of the quiz"),
+    student=Depends(get_current_student),
+    db=Depends(get_db),
+):
+    try:
+        attempts = await db.quizattempt.find_many(
+            where={
+                "AND": [
+                    {"quizId": quiz_id},
+                    {"userId": student.id},
+                ]
+            }
+        )
+        attempt_ids = [attempt.id for attempt in attempts if attempt.length > 0]
+        return {"attempt_ids": attempt_ids}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+
+
 @router.post("/submit/{attempt_id}", status_code=status.HTTP_200_OK)
 async def submit_quiz_response(
     submission_data: List[QuizResponseSub],
