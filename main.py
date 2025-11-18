@@ -18,7 +18,7 @@ from utils.db_util import lifespan_manager
 from fastapi.middleware.cors import CORSMiddleware
 from routes.fcm_route import notification_service_router
 
-from agent.classroom_ai_agent import agent_router
+# from agent.classroom_ai_agent import agent_router
 
 
 # Lifespan event handler
@@ -68,7 +68,7 @@ app.include_router(mermaid_gen_test.router)
 
 app.include_router(notification_service_router)
 
-app.include_router(agent_router)
+# app.include_router(agent_router)
 
 
 # Root endpoint
